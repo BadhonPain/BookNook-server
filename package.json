@@ -8,6 +8,7 @@
     "start": "next start",
     "server": "node server.js",
     "server:dev": "node --watch server.js",
+    "test": "node --test",
     "lint": "eslint"
   },
   "dependencies": {
