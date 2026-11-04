@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { after, before, test } = require('node:test');
 
 const { app } = require('./server');
+const { buildRecommendations } = require('./lib/recommendations');
 
 let server;
 let baseUrl;
@@ -45,4 +46,44 @@ test('book creation requires authentication', async () => {
 
   assert.equal(response.status, 401);
   assert.deepEqual(await response.json(), { message: 'Sign in to continue.' });
+});
+
+test('recommendations require authentication', async () => {
+  const response = await fetch(`${baseUrl}/recommendations`);
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { message: 'Sign in to continue.' });
+});
+
+test('content-based recommendations rank category, author, and interest matches', () => {
+  const books = [
+    { _id: 'borrowed', title: 'Already read', author: 'A. Writer', category: 'Fiction' },
+    { _id: 'author', title: 'Another story', author: 'A. Writer', category: 'History' },
+    { _id: 'category', title: 'New history', author: 'B. Writer', category: 'History' },
+    { _id: 'interest', title: 'Space travel', author: 'C. Writer', category: 'Science' },
+    { _id: 'unmatched', title: 'A cookbook', author: 'D. Writer', category: 'Kids' },
+  ];
+  const recommendations = buildRecommendations({
+    books,
+    history: [{ bookId: 'borrowed', author: 'A. Writer', category: 'Fiction' }],
+    preferences: { categories: ['History'], interests: ['space'] },
+  });
+
+  assert.deepEqual(recommendations.map(({ book }) => book._id), ['author', 'category', 'interest']);
+  assert.ok(recommendations[0].reasons.some((reason) => reason.includes('author')));
+  assert.ok(recommendations[2].reasons.some((reason) => reason.includes('space')));
+});
+
+test('recommendations use recent books as a fallback without reader signals', () => {
+  const recommendations = buildRecommendations({
+    books: [
+      { _id: 'older', createdAt: '2024-01-01' },
+      { _id: 'newer', createdAt: '2025-01-01' },
+    ],
+    history: [],
+    preferences: { categories: [], interests: [] },
+  });
+
+  assert.equal(recommendations[0].book._id, 'newer');
+  assert.deepEqual(recommendations[0].reasons, ['Recently added to the library']);
 });

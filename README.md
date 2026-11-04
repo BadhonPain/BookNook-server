@@ -23,5 +23,9 @@ The client application's BetterAuth URL, JWT audience, and the API's JWKS URL mu
 | `POST` | `/borrows` | JWT | Borrow an available book. |
 | `GET` | `/borrows` | JWT | List the authenticated user's active borrows. |
 | `DELETE` | `/borrows/:id` | JWT + owner | Return a borrowed book. |
+| `GET` | `/recommendations` | JWT | Recommend available, not-yet-borrowed books from reading history and saved interests; accepts `?limit=10`. |
+| `PUT` | `/recommendations/preferences` | JWT | Save favorite categories and up to 20 author, topic, or theme interests. |
 
 The borrow route atomically decrements available copies, prevents duplicate active borrows for a user/book pair, and restores a copy on return.
+
+Recommendations use content-based category, author, title, and description matches. Borrow history is used as an implicit signal, while reader preferences are stored per account in MongoDB. Collaborative filtering is not currently used.

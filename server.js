@@ -6,6 +6,7 @@ const cors = require('cors');
 const { connectToDatabase, ensureIndexes, getDb } = require('./lib/db');
 const booksRouter = require('./routes/books');
 const borrowsRouter = require('./routes/borrows');
+const recommendationsRouter = require('./routes/recommendations');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -39,6 +40,7 @@ app.get('/api/health', async (req, res) => {
 
 app.use('/books', booksRouter);
 app.use('/borrows', borrowsRouter);
+app.use('/recommendations', recommendationsRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found.' });

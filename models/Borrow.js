@@ -15,6 +15,13 @@ const borrowSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    bookAuthor: {
+      type: String,
+    },
+    bookCategory: {
+      type: String,
+      enum: ['Fiction', 'Science', 'History', 'Kids', 'Others'],
+    },
     userEmail: {
       type: String,
       required: true,

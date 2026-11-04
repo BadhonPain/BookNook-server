@@ -44,6 +44,8 @@ router.post('/', requireAuth, async (req, res, next) => {
       bookId: parsedBookId,
       bookTitle: book.title,
       bookImage: book.image,
+      bookAuthor: book.author,
+      bookCategory: book.category,
       userEmail: req.user.email,
       borrowDate,
       returnDate: finalReturnDate,
