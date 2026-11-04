@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BookNook API
 
-## Getting Started
+Express and MongoDB API for the BookNook library client. Authentication is issued by BetterAuth in the client application and validated here against its public JWKS endpoint.
 
-First, run the development server:
+## Run locally
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Install Node.js 20 or newer.
+2. Copy `.env.example` to `.env` and set `MONGODB_URI`.
+3. Start the API with `npm run server:dev`.
+4. The API listens on `http://localhost:5000`; `GET /api/health` reports API and database availability.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The client application's BetterAuth URL, JWT audience, and the API's JWKS URL must agree. Keep `.env` out of source control; `.env.example` contains placeholders only.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API routes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/books` | Public | List books; supports `?category=Science`, `?available=true`, `?limit=6`, newest first, or `?sort=mostBorrowed` based on recorded borrows. |
+| `GET` | `/books/:id` | Public | Read one book. |
+| `POST` | `/books` | JWT | Add a book for the authenticated user. |
+| `PATCH` | `/books/:id` | JWT + owner | Update an owned book. |
+| `DELETE` | `/books/:id` | JWT + owner | Delete an owned book with no active borrows. |
+| `POST` | `/borrows` | JWT | Borrow an available book. |
+| `GET` | `/borrows` | JWT | List the authenticated user's active borrows. |
+| `DELETE` | `/borrows/:id` | JWT + owner | Return a borrowed book. |
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The borrow route atomically decrements available copies, prevents duplicate active borrows for a user/book pair, and restores a copy on return.
