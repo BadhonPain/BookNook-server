@@ -1,9 +1,10 @@
-const { createRemoteJWKSet, jwtVerify } = require('jose');
-
 const issuer = process.env.BETTER_AUTH_URL || 'http://localhost:3000';
 const audience = process.env.JWT_AUDIENCE || 'booknook-api';
 const jwksUrl = process.env.AUTH_JWKS_URL || `${issuer.replace(/\/$/, '')}/api/auth/jwks`;
-const remoteJwks = createRemoteJWKSet(new URL(jwksUrl));
+const josePromise = import('jose').then(({ createRemoteJWKSet, jwtVerify }) => ({
+  jwtVerify,
+  remoteJwks: createRemoteJWKSet(new URL(jwksUrl)),
+}));
 
 const invalidTokenCodes = new Set([
   'ERR_JWS_INVALID',
@@ -23,6 +24,7 @@ async function requireAuth(req, res, next) {
   }
 
   try {
+    const { jwtVerify, remoteJwks } = await josePromise;
     const { payload } = await jwtVerify(token, remoteJwks, {
       issuer,
       audience,

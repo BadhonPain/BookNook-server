@@ -6,10 +6,27 @@ Express and MongoDB API for the BookNook library client. Authentication is issue
 
 1. Install Node.js 20 or newer.
 2. Copy `.env.example` to `.env` and set `MONGODB_URI`.
-3. Start the API with `npm run server:dev`.
+3. Start the API with `npm run dev`.
 4. The API listens on `http://localhost:5000`; `GET /api/health` reports API and database availability.
 
 The client application's BetterAuth URL, JWT audience, and the API's JWKS URL must agree. Keep `.env` out of source control; `.env.example` contains placeholders only.
+
+## Deploy to Vercel
+
+Vercel detects the root `server.js` as an Express application; no `vercel.json` or custom build command is required. Import this repository into Vercel and deploy it with the Express framework preset.
+
+Add these environment variables in the Vercel project settings for each environment you deploy (Production, Preview, and Development as applicable):
+
+| Variable | Value |
+| --- | --- |
+| `MONGODB_URI` | MongoDB connection string for the deployment environment. Store this as a Vercel secret; do not commit it. |
+| `MONGODB_DATABASE` | Database name, for example `booknook`. |
+| `CLIENT_URL` | Exact client origin(s) allowed by CORS, such as `https://your-client.example`; separate multiple origins with commas. |
+| `BETTER_AUTH_URL` | Base URL of the client application's BetterAuth issuer. |
+| `AUTH_JWKS_URL` | Public JWKS endpoint for that issuer, typically `https://your-client.example/api/auth/jwks`. |
+| `JWT_AUDIENCE` | The audience expected in API access tokens, matching the client configuration. |
+
+Make sure the deployed API can reach MongoDB and that the client origin, auth issuer, JWKS endpoint, and token audience match the client application's production configuration. After deployment, check `https://<your-vercel-domain>/api/health`; a healthy deployment returns `"status":"ok"` and `"database":"connected"`.
 
 ## API routes
 
