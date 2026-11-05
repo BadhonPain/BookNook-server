@@ -55,6 +55,13 @@ test('recommendations require authentication', async () => {
   assert.deepEqual(await response.json(), { message: 'Sign in to continue.' });
 });
 
+test('borrow history requires authentication', async () => {
+  const response = await fetch(`${baseUrl}/borrows/history`);
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { message: 'Sign in to continue.' });
+});
+
 test('content-based recommendations rank category, author, and interest matches', () => {
   const books = [
     { _id: 'borrowed', title: 'Already read', author: 'A. Writer', category: 'Fiction' },

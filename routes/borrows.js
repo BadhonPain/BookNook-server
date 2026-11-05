@@ -88,6 +88,19 @@ router.get('/', requireAuth, async (req, res, next) => {
   }
 });
 
+router.get('/history', requireAuth, async (req, res, next) => {
+  try {
+    const borrows = await getCollection('borrows');
+    const items = await borrows
+      .find({ userEmail: req.user.email, returned: true })
+      .sort({ updatedAt: -1, borrowDate: -1 })
+      .toArray();
+    return res.json(items);
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.delete('/:id', requireAuth, async (req, res, next) => {
   if (!ObjectId.isValid(req.params.id)) {
     return res.status(400).json({ message: 'Invalid borrow id.' });
@@ -109,9 +122,10 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
       return res.status(409).json({ message: 'This book has already been returned.' });
     }
 
+    const returnedAt = new Date();
     const result = await borrows.updateOne(
       { _id: borrowId, userEmail: req.user.email, returned: false },
-      { $set: { returned: true, updatedAt: new Date() } },
+      { $set: { returned: true, updatedAt: returnedAt } },
     );
     if (!result.matchedCount) {
       return res.status(409).json({ message: 'This book has already been returned.' });
@@ -121,7 +135,10 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
       { _id: borrow.bookId },
       { $inc: { totalCopies: 1 }, $set: { updatedAt: new Date() } },
     );
-    return res.json({ message: 'Book returned successfully.' });
+    return res.json({
+      message: 'Book returned successfully.',
+      returnedAt,
+    });
   } catch (error) {
     return next(error);
   }

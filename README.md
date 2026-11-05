@@ -22,6 +22,7 @@ The client application's BetterAuth URL, JWT audience, and the API's JWKS URL mu
 | `DELETE` | `/books/:id` | JWT + owner | Delete an owned book with no active borrows. |
 | `POST` | `/borrows` | JWT | Borrow an available book. |
 | `GET` | `/borrows` | JWT | List the authenticated user's active borrows. |
+| `GET` | `/borrows/history` | JWT | List the authenticated reader's returned books. |
 | `DELETE` | `/borrows/:id` | JWT + owner | Return a borrowed book. |
 | `GET` | `/recommendations` | JWT | Recommend available, not-yet-borrowed books from reading history and saved interests; accepts `?limit=10`. |
 | `PUT` | `/recommendations/preferences` | JWT | Save favorite categories and up to 20 author, topic, or theme interests. |
