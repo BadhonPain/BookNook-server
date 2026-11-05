@@ -1,49 +1,124 @@
-# BookNook API
+# BookNook — API
 
-Express and MongoDB API for the BookNook library client. Authentication is issued by BetterAuth in the client application and validated here against its public JWKS endpoint.
+**The REST API behind BookNook, a community-powered library for sharing and borrowing books.**
+
+[![Visit BookNook](https://img.shields.io/badge/Visit-BookNook-537861?style=for-the-badge)](https://book-nook-client-cyan.vercel.app/)
+[![API repository](https://img.shields.io/badge/GitHub-API-181717?style=for-the-badge&logo=github)](https://github.com/BadhonPain/BookNook-server)
+[![Client repository](https://img.shields.io/badge/GitHub-Client-181717?style=for-the-badge&logo=github)](https://github.com/BadhonPain/BookNook-client)
+
+**Live application:** [book-nook-client-cyan.vercel.app](https://book-nook-client-cyan.vercel.app/)
+
+BookNook API is an Express and MongoDB service for the [BookNook web client](https://github.com/BadhonPain/BookNook-client). It provides catalog, borrowing, reading-history, and personalized-recommendation endpoints. The client handles accounts with Better Auth; this API verifies its signed access tokens using the issuer's public JWKS.
+
+## Features
+
+- Public catalog and individual book lookups, with category, availability, newest, and most-borrowed filters.
+- Authenticated book creation and owner-only edits and deletion.
+- Borrow and return workflows that keep available-copy counts in sync and prevent duplicate active loans.
+- Per-reader active loans and return history.
+- Personalized book recommendations based on reading history, favorite categories, authors, and interests.
+- Reader preference validation and persistence.
+- CORS allowlisting, request validation, JSON error responses, and a database health endpoint.
+
+## Technology
+
+- Node.js and Express 5
+- MongoDB Node.js driver
+- Better Auth JWT verification with `jose`
+- Node.js built-in test runner
 
 ## Run locally
 
-1. Install Node.js 20 or newer.
-2. Copy `.env.example` to `.env` and set `MONGODB_URI`.
-3. Start the API with `npm run dev`.
-4. The API listens on `http://localhost:5000`; `GET /api/health` reports API and database availability.
+### Prerequisites
 
-The client application's BetterAuth URL, JWT audience, and the API's JWKS URL must agree. Keep `.env` out of source control; `.env.example` contains placeholders only.
+- Node.js 20 or newer
+- npm
+- MongoDB, local or hosted
 
-## Deploy to Vercel
+### Setup
 
-Vercel detects the root `server.js` as an Express application; no `vercel.json` or custom build command is required. Import this repository into Vercel and deploy it with the Express framework preset.
+```powershell
+npm install
+Copy-Item .env.example .env
+```
 
-Add these environment variables in the Vercel project settings for each environment you deploy (Production, Preview, and Development as applicable):
+Set the values in `.env`:
 
-| Variable | Value |
+| Variable | Purpose |
 | --- | --- |
-| `MONGODB_URI` | MongoDB connection string for the deployment environment. Store this as a Vercel secret; do not commit it. |
-| `MONGODB_DATABASE` | Database name, for example `booknook`. |
-| `CLIENT_URL` | Exact client origin(s) allowed by CORS, such as `https://your-client.example`; separate multiple origins with commas. |
-| `BETTER_AUTH_URL` | Base URL of the client application's BetterAuth issuer. |
-| `AUTH_JWKS_URL` | Public JWKS endpoint for that issuer, typically `https://your-client.example/api/auth/jwks`. |
-| `JWT_AUDIENCE` | The audience expected in API access tokens, matching the client configuration. |
+| `PORT` | Local API port; defaults to `5000`. |
+| `MONGODB_URI` | MongoDB connection string. Required. |
+| `MONGODB_DATABASE` | Database name; defaults to `booknook`. |
+| `CLIENT_URL` | Allowed client origin(s) for CORS. Separate multiple origins with commas. |
+| `BETTER_AUTH_URL` | Base URL of the client application's Better Auth issuer. |
+| `AUTH_JWKS_URL` | Public JWKS endpoint used to verify client-issued tokens. Defaults to `<BETTER_AUTH_URL>/api/auth/jwks`. |
+| `JWT_AUDIENCE` | Expected JWT audience; defaults to `booknook-api`. |
 
-Make sure the deployed API can reach MongoDB and that the client origin, auth issuer, JWKS endpoint, and token audience match the client application's production configuration. After deployment, check `https://<your-vercel-domain>/api/health`; a healthy deployment returns `"status":"ok"` and `"database":"connected"`.
+Start the API:
 
-## API routes
+```powershell
+npm run dev
+```
 
-| Method | Path | Access | Purpose |
+The API listens at [http://localhost:5000](http://localhost:5000). Check its health at [http://localhost:5000/api/health](http://localhost:5000/api/health); a healthy response includes `"status":"ok"` and `"database":"connected"`.
+
+To run the client locally as well, follow the setup instructions in the [client README](https://github.com/BadhonPain/BookNook-client#run-locally).
+
+## API reference
+
+All paths are relative to the API base URL. Routes marked **Authenticated** require a valid access token issued by the configured Better Auth application. Book edits and deletions also require that the signed-in reader owns the listing.
+
+### Health and books
+
+| Method | Path | Access | Description |
 | --- | --- | --- | --- |
-| `GET` | `/books` | Public | List books; supports `?category=Science`, `?available=true`, `?limit=6`, newest first, or `?sort=mostBorrowed` based on recorded borrows. |
-| `GET` | `/books/:id` | Public | Read one book. |
-| `POST` | `/books` | JWT | Add a book for the authenticated user. |
-| `PATCH` | `/books/:id` | JWT + owner | Update an owned book. |
-| `DELETE` | `/books/:id` | JWT + owner | Delete an owned book with no active borrows. |
-| `POST` | `/borrows` | JWT | Borrow an available book. |
-| `GET` | `/borrows` | JWT | List the authenticated user's active borrows. |
-| `GET` | `/borrows/history` | JWT | List the authenticated reader's returned books. |
-| `DELETE` | `/borrows/:id` | JWT + owner | Return a borrowed book. |
-| `GET` | `/recommendations` | JWT | Recommend available, not-yet-borrowed books from reading history and saved interests; accepts `?limit=10`. |
-| `PUT` | `/recommendations/preferences` | JWT | Save favorite categories and up to 20 author, topic, or theme interests. |
+| `GET` | `/api/health` | Public | Report API and MongoDB availability. |
+| `GET` | `/books` | Public | List books. Supports `category`, `available=true\|false`, `limit` (1–100), and `sort=newest\|mostBorrowed`. |
+| `GET` | `/books/:id` | Public | Get a book by ID. |
+| `POST` | `/books` | Authenticated | Add a book. |
+| `PATCH` | `/books/:id` | Authenticated + owner | Update an owned book. |
+| `DELETE` | `/books/:id` | Authenticated + owner | Delete an owned book when it has no active loans. |
 
-The borrow route atomically decrements available copies, prevents duplicate active borrows for a user/book pair, and restores a copy on return.
+### Borrowing
 
-Recommendations use content-based category, author, title, and description matches. Borrow history is used as an implicit signal, while reader preferences are stored per account in MongoDB. Collaborative filtering is not currently used.
+| Method | Path | Access | Description |
+| --- | --- | --- | --- |
+| `POST` | `/borrows` | Authenticated | Borrow an available book. `bookId` is required; `returnDate` is optional and defaults to seven days after borrowing. |
+| `GET` | `/borrows` | Authenticated | List the reader's active loans. |
+| `GET` | `/borrows/history` | Authenticated | List the reader's returned books. |
+| `DELETE` | `/borrows/:id` | Authenticated + borrower | Return a loan. |
+
+### Recommendations
+
+| Method | Path | Access | Description |
+| --- | --- | --- | --- |
+| `GET` | `/recommendations` | Authenticated | Get recommendations and saved preferences. Supports `limit` (1–30; defaults to 10). |
+| `PUT` | `/recommendations/preferences` | Authenticated | Save favorite categories and up to 20 author, topic, or theme interests. |
+
+The borrow endpoint decrements an available copy before recording a loan and restores the copy if recording fails. A unique partial MongoDB index prevents a reader from having more than one active loan for the same book. Recommendations use content-based category, author, title, and description matches, with borrow history and saved preferences as reader signals.
+
+## Available scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the API with Node.js watch mode. |
+| `npm start` | Start the API for production. |
+| `npm test` | Run the automated tests with Node's built-in test runner. |
+
+## Deployment
+
+Deploy the Express API separately from the Next.js client. Configure the environment variables above in the hosting provider, use a production MongoDB connection, and set `CLIENT_URL` to the exact deployed client origin. Configure the client's `NEXT_PUBLIC_API_URL` to point to the deployed API.
+
+The live BookNook web application is [book-nook-client-cyan.vercel.app](https://book-nook-client-cyan.vercel.app/). Its API deployment URL depends on the active hosting configuration; use that URL for the client's `NEXT_PUBLIC_API_URL` and for the API health check.
+
+Never commit `.env`, MongoDB credentials, or authentication configuration secrets. Use `.env.example` as the safe local template.
+
+## Contributing
+
+1. Fork the repository and create a feature branch.
+2. Keep changes focused and run `npm test`.
+3. Open a pull request describing the change and how it was verified.
+
+## License
+
+No license is currently specified. Contact the repository owner before redistributing or reusing this project.
